@@ -15,6 +15,13 @@ const validActionNames = new Set(["manifests", "blobs", "tags", "referrers"])
 const DEFAULT_BACKEND_HOST: string = "https://registry-1.docker.io"
 
 export async function handleRequest(request: Request): Promise<Response> {
+  const url = new URL(request.url)
+  
+  // Allow unauthenticated HEAD requests to /v2/ for Docker registry compatibility check
+  if (request.method === 'HEAD' && url.pathname === '/v2/') {
+    return new Response(null, { status: 200 })
+  }
+
   // Validate authentication if configured
   const authResult = await validateBasicAuth(request)
   if (!authResult.valid) {

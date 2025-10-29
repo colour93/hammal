@@ -1,5 +1,6 @@
 import { TokenProvider } from './token'
 import { Backend } from './backend'
+import { validateBasicAuth, sendUnauthorized } from './auth'
 
 const PROXY_HEADER_ALLOW_LIST: string[] = ["accept", "user-agent", "accept-encoding"]
 
@@ -14,6 +15,12 @@ const validActionNames = new Set(["manifests", "blobs", "tags", "referrers"])
 const DEFAULT_BACKEND_HOST: string = "https://registry-1.docker.io"
 
 export async function handleRequest(request: Request): Promise<Response> {
+  // Validate authentication if configured
+  const authResult = await validateBasicAuth(request)
+  if (!authResult.valid) {
+    return sendUnauthorized(authResult.error || 'Unauthorized')
+  }
+
   return handleRegistryRequest(request)
 }
 
@@ -68,8 +75,13 @@ async function handleRegistryRequest(request: Request): Promise<Response> {
   const orgName = orgNameFromPath(reqURL.pathname)
   const pathname = rewritePath(orgName, reqURL.pathname)
   const host = hostByOrgName(orgName)
-  const tokenProvider = new TokenProvider()
+  
+  // Get Docker credentials from environment/secrets
+  const dockerUsername = (globalThis as any).DOCKER_USERNAME || ''
+  const dockerPassword = (globalThis as any).DOCKER_PASSWORD || ''
+  
+  const tokenProvider = new TokenProvider(dockerUsername, dockerPassword)
   const backend = new Backend(host, tokenProvider)
   const headers = copyProxyHeaders(request.headers)
-  return backend.proxy(pathname, {headers: request.headers})
+  return backend.proxy(pathname, {headers: headers})
 }

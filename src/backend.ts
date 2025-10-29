@@ -30,7 +30,7 @@ class Backend {
     }
     const token: Token = await this.tokenProvider.token(authenticateStr)
     const authenticatedHeaders = new Headers(args.headers)
-    authenticatedHeaders.append("Authorization", `Bearer ${token.token}`)
+    authenticatedHeaders.set("Authorization", `Bearer ${token.token}`)
     return await fetch(url.toString(), {method: "GET", headers:authenticatedHeaders, redirect: "follow"})
   }
 }

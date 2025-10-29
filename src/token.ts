@@ -74,8 +74,17 @@ export class TokenProvider {
     if (wwwAuthenticate.scope.length) {
       url.searchParams.set('scope', wwwAuthenticate.scope)
     }
-    // TODO: support basic auth
-    const response = await fetch(url.toString(), { method: 'GET', headers: {} })
+    
+    // Build request headers
+    const headers: Record<string, string> = {}
+    
+    // Add Basic Authentication if credentials are provided
+    if (this.username && this.password) {
+      const credentials = btoa(`${this.username}:${this.password}`)
+      headers['Authorization'] = `Basic ${credentials}`
+    }
+    
+    const response = await fetch(url.toString(), { method: 'GET', headers })
     if (response.status !== 200) {
       throw new Error(`Unable to fetch token from ${url.toString()} status code ${response.status}`)
     }
